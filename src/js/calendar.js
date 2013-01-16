@@ -13,7 +13,9 @@ var Calendar = {};
 
     Calendar.drawCalendar = function (element, data) {
         var html = "";
+        
         element.empty();
+        
         html += "<div class='calendar'><table class='table table-condensed' style='margin-bottom: 0;'><tbody><tr class='info'>";
 
         for (var i = 0; i < 7; i++) {
@@ -49,19 +51,14 @@ var Calendar = {};
             }
             html += "</tr>";
         }
+        
         html += "</tbody></table></div>";
 
         element.append(html);
-
-        bindEvent();
-    };
-
-    var bindEvent = function () {
-        $(".enabled").on("tap", function () {
-            var date = $(this).html();
-            Calendar.fn(date);
-            Calendar.date.setDate(date);
-        });
+        
+        if(Calendar._callback) {
+            Calendar.bindEvent(Calendar._callback);
+        }
     };
 
     var fitData = function (year, month) {
@@ -302,27 +299,31 @@ var Calendar = {};
         }
     };
 
-    Calendar.drawPreMonth = function (preButton, title) {
+    Calendar.drawPreMonth = function (preButton) {
         preButton.on("tap", function () {
             var t = preMonth(Calendar.date);
             Calendar.drawCalendar(Calendar.$calendar, fitData(t.getFullYear(), t.getMonth() + 1));
-            if (title) {
-                $(title).html(t.getFullYear() + "年" + (t.getMonth() + 1) + "月");
+            if (Calendar._title) {
+                Calendar._title.html(t.getFullYear() + "年" + (t.getMonth() + 1) + "月");
             }
         });
+        
+        return this;
     };
 
-    Calendar.drawNextMonth = function (nextButton, title) {
+    Calendar.drawNextMonth = function (nextButton) {
         nextButton.on("tap", function () {
             var t = nextMonth(Calendar.date);
             Calendar.drawCalendar(Calendar.$calendar, fitData(t.getFullYear(), t.getMonth() + 1));
-            if (title) {
-                $(title).html(t.getFullYear() + "年" + (t.getMonth() + 1) + "月");
+            if (Calendar._title) {
+                Calendar._title.html(t.getFullYear() + "年" + (t.getMonth() + 1) + "月");
             }
         });
+        
+        return this;
     };
 
-    Calendar.init = function (element, fn, title) {
+    Calendar.init = function (element, title) {
         var data;
 
         Calendar.date = new Date();
@@ -330,15 +331,31 @@ var Calendar = {};
         data = fitData(Calendar.date.getFullYear(), Calendar.date.getMonth() + 1);
 
         if (title) {
+            Calendar._title = $(title);
             $(title).html(Calendar.date.getFullYear() + "年" + (Calendar.date.getMonth() + 1) + "月");
         }
-
-        Calendar.fn = fn;
+        
         Calendar.drawCalendar(Calendar.$calendar, data);
+        
+        return this;
     };
 
     Calendar.rerender = function () {
         var data = fitData(Calendar.date.getFullYear(), Calendar.date.getMonth() + 1);
         Calendar.drawCalendar(Calendar.$calendar, data);
+        
+        return this;
+    };
+    
+    Calendar.bindEvent = function (callback) {
+        Calendar._callback = callback;
+        
+        $(".enabled").on("tap", function () {
+            var date = $(this).html();
+            callback(date);
+            Calendar.date.setDate(date);
+        });
+
+        return this;
     };
 })($, window);

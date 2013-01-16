@@ -23,12 +23,9 @@
             <div id="calendar" data-role="content"></div>
         </div>
         <script>
-            Calendar.init ($ ("#calendar"), function(date){
+            Calendar.init($("#calendar"), $("#title")).drawPreMonth($("#pre")).drawNextMonth($("#next")).bindEvent(function(date){
                 alert(date);
-            }, $ ("#title"));
-            
-            Calendar.drawPreMonth ($ ("#pre"), $ ("#title"));
-            Calendar.drawNextMonth ($ ("#next"), $ ("#title"));
+            });
         </script>
     </body>
 </html>
