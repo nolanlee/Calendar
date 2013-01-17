@@ -1,4 +1,5 @@
 var Calendar = {};
+
 (function ($, window) {
     var storage = window.localStorage;
 
@@ -111,6 +112,7 @@ var Calendar = {};
         data.row = row;
         return data;
     };
+    
     var getOffset = function (year, month) {
         var d = new Date();
 
@@ -358,4 +360,5 @@ var Calendar = {};
 
         return this;
     };
+    
 })($, window);
