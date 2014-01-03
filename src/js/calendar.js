@@ -1,6 +1,4 @@
-function Calendar_v2 (oConfig) {
-    var Calendar = function() {};
-
+function Calendar (oConfig) {
     var YEAR_SCOPE_VIEW = "YearScopeView",
         YEARS_VIEW = "YearsView",
         MONTHS_VIEW = "MonthsView",
@@ -9,6 +7,17 @@ function Calendar_v2 (oConfig) {
     var calendarStorage = window.localStorage,
         doc = window.document,
         currentDate = new Date();
+
+    var _assertType = function(o, e) {
+        return Object.prototype.toString.call(o) === ("[object " + e + "]"); 
+    };
+
+    var _initConfig = function(oConfig) {
+        return {
+            viewName: (oConfig && oConfig.viewName ) ? oConfig.viewName : MONTH_VIEW,
+            date: (oConfig && oConfig.date && _assertType(oConfig.date), "Date") ? oConfig.date : currentDate
+        };
+    };
 
     var _getOffset = function (nYear, nMonth) {
         var d = new Date();
@@ -62,7 +71,7 @@ function Calendar_v2 (oConfig) {
             row = Math.ceil((offset + monthLength) / 7),
             endOffset = 1,
             indexDate = 1,
-            beginOffset = _getMonthLength(nYear, (nMonth == 1) ? 12 : nMonth - 1);
+            beginOffset = _getMonthLength(nYear, (nMonth === 1) ? 12 : nMonth - 1);
 
         for (var i = 0; i < row; i++) {
             monthData[i] = [];
@@ -145,7 +154,7 @@ function Calendar_v2 (oConfig) {
         htmlStr += "<div class='calendar'><table class='table table-condensed' style='margin-bottom: 0;'><tbody><tr class='info'>";
 
         for (var i = 0; i < 7; i++) {
-            if (i == 6 || i == 0) {
+            if (i === 6 || i === 0) {
                 htmlStr += "<td style='text-align:center;color: #FF5C00;'>" + _formatWeek(i) + "</th>";
             } else {
                 htmlStr += "<td style='text-align:center;'>" + _formatWeek(i) + "</th>";
@@ -160,13 +169,13 @@ function Calendar_v2 (oConfig) {
                 if (monthData[i][j].enabled) {
                     var nowDateStr = _Calendar.date.getFullYear() + "-" + (_Calendar.date.getMonth() + 1) + "-" + monthData[i][j].date;
                     if (hasPlan(nowDateStr)) {
-                        if (j == 0 || j == 6) {
+                        if (j === 0 || j === 6) {
                             htmlStr += "<td class='enabled cell plan' style='text-align:center;color: #FF5C00;'>" + monthData[i][j].date + "</td>";
                         } else {
                             htmlStr += "<td class='enabled cell plan' style='text-align:center;'>" + monthData[i][j].date + "</td>";
                         }
                     } else {
-                        if (j == 0 || j == 6) {
+                        if (j === 0 || j === 6) {
                             htmlStr += "<td class='enabled cell' style='text-align:center;color: #FF5C00;'>" + monthData[i][j].date + "</td>";
                         } else {
                             htmlStr += "<td class='enabled cell' style='text-align:center;'>" + monthData[i][j].date + "</td>";
@@ -203,21 +212,22 @@ function Calendar_v2 (oConfig) {
                 throw new Error("Invalid view name");
                 break;
         }
-
+        oContainer.innerHTML = htmlStr;
     };
 
     /**
      * draw calendar
      */
     Calendar.prototype.placeAt = function(sId) {
-        var container = doc.getElementById(sId);
+        var container = doc.getElementById(sId),
+            _oConfig = _initConfig(oConfig);
 
         if(container === null) {
             throw new Error("Container Not Found");
         } else {
-            _drawCalendar(container, oConfig.viewName, currentDate); 
+            _drawCalendar(container, _oConfig.viewName, _oConfig.date);
         }
-    }
+    };
 
     return new Calendar();
 };
