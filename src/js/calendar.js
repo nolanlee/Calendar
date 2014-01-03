@@ -1,8 +1,10 @@
-var Calendar_v2 = function(oConfig) {
-    var YEAR_SCOPE_VIEW = "yearScope",
-        YEARS_VIEW = "years",
-        MONTHS_VIEW = "months",
-        MONTH_VIEW = "month";
+function Calendar_v2 (oConfig) {
+    var Calendar = function() {};
+
+    var YEAR_SCOPE_VIEW = "YearScopeView",
+        YEARS_VIEW = "YearsView",
+        MONTHS_VIEW = "MonthsView",
+        MONTH_VIEW = "MonthView";
 
     var calendarStorage = window.localStorage,
         doc = window.document,
@@ -54,7 +56,7 @@ var Calendar_v2 = function(oConfig) {
         return dateCount;
     };
 
-    var _fitDate = function (nYear, nMonth) {
+    var _getMonthDetails = function (nYear, nMonth) {
         var monthData = {}, offset = _getOffset(nYear, nMonth),
             monthLength = _getMonthLength(nYear, nMonth),
             row = Math.ceil((offset + monthLength) / 7),
@@ -182,25 +184,52 @@ var Calendar_v2 = function(oConfig) {
         return htmlStr;
     };
 
-    var _drawCalendar = function(sView) {
+    var _drawCalendar = function(oContainer, sView, oDate) {
+        var oData = null,
+            htmlStr = null;
 
-    };
-
-    return {
-        placeAt: function(sId) {
-            // draw calendar
-            var container = doc.getElementById(sId);
-
-            if(container === null) {
-                throw new Error("Container Not Found");
-            }
-
-            _drawCalendar(container);
+        switch(sView) {
+            case YEAR_SCOPE_VIEW:
+                break;
+            case YEARS_VIEW:
+                break;
+            case MONTHS_VIEW:
+                break;
+            case MONTH_VIEW:
+                oData = _getMonthDetails(oDate.getFullYear(), getMonth() + 1);
+                htmlStr = _getMonthView(oData);
+                break;
+            default:
+                throw new Error("Invalid view name");
+                break;
         }
+
     };
+
+    /**
+     * draw calendar
+     */
+    Calendar.prototype.placeAt = function(sId) {
+        var container = doc.getElementById(sId);
+
+        if(container === null) {
+            throw new Error("Container Not Found");
+        } else {
+            _drawCalendar(container, oConfig.viewName, currentDate); 
+        }
+    }
+
+    return new Calendar();
 };
 
-
+//==============================================================================================================================
+//==============================================================================================================================
+//==============================================================================================================================
+//==============================================================================================================================
+//==============================================================================================================================
+//==============================================================================================================================
+//==============================================================================================================================
+//==============================================================================================================================
 var Calendar = (function ($, window) {
     var storage = window.localStorage;
     var _Calendar = {};

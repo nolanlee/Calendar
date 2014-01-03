@@ -4,13 +4,7 @@
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
         <title>Calendar-Nolan</title>
-        <link rel="stylesheet" href="css/jquery.mobile-1.2.0.min.css" />
-        <link rel="stylesheet" href="css/jquery.mobile.theme-1.2.0.min.css" />
-        <link rel="stylesheet" href="css/bootstrap-responsive.min.css" />
-        <link rel="stylesheet" href="css/bootstrap.min.css" />
         <link rel="stylesheet" href="css/calendar.css" />
-        <script src="js/jquery-1.8.3.min.js"></script>
-        <script src="js/jquery.mobile-1.2.0.min.js"></script>
         <script src="js/calendar.js"></script>
         <style type="text/css">
             #calendar {
@@ -20,25 +14,13 @@
         </style>
     </head>
     <body>
-        <div data-role="page" >
-            <div data-role="header" data-theme="c" data-mini="true">
-                <a id="pre" data-role="button"><i class="icon-chevron-left"></i></a>
-                <h4 id="title"></h4>
-                <a id="next" data-role="button"><i class=" icon-chevron-right"></i></a>
-            </div>
-            <div id="calendar" data-role="content"></div>
-        </div>
-        <div id="c"></div>
+        <div id="calendar"></div>
         <script>
-            Calendar.init($("#calendar"), $("#title")).drawPreMonth($("#pre")).drawNextMonth($("#next")).bindEvent(function(date){
-                alert("This date is " + date);
-            });
-
             new Calendar_v2({
                 click: function(event) {
                     alert("This date is " + event.getParameter("date"));
                 }
-            }).placeAt("c");
+            }).placeAt("calendar");
         </script>
     </body>
 </html>
