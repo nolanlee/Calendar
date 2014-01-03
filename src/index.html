@@ -12,6 +12,12 @@
         <script src="js/jquery-1.8.3.min.js"></script>
         <script src="js/jquery.mobile-1.2.0.min.js"></script>
         <script src="js/calendar.js"></script>
+        <style type="text/css">
+            #calendar {
+                width: 400px;
+                min-width: 300px;
+            }
+        </style>
     </head>
     <body>
         <div data-role="page" >
@@ -22,10 +28,17 @@
             </div>
             <div id="calendar" data-role="content"></div>
         </div>
+        <div id="c"></div>
         <script>
             Calendar.init($("#calendar"), $("#title")).drawPreMonth($("#pre")).drawNextMonth($("#next")).bindEvent(function(date){
                 alert("This date is " + date);
             });
+
+            new Calendar_v2({
+                click: function(event) {
+                    alert("This date is " + event.getParameter("date"));
+                }
+            }).placeAt("c");
         </script>
     </body>
 </html>

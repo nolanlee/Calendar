@@ -1,64 +1,266 @@
-var Calendar = {};
+var Calendar_v2 = function(oConfig) {
+    var YEAR_SCOPE_VIEW = "yearScope",
+        YEARS_VIEW = "years",
+        MONTHS_VIEW = "months",
+        MONTH_VIEW = "month";
 
-(function ($, window) {
-    var storage = window.localStorage;
+    var calendarStorage = window.localStorage,
+        doc = window.document,
+        currentDate = new Date();
 
-    if (storage) {
-        if (!storage.getItem("nolan_calendar")) {
-            storage.setItem("nolan_calendar", JSON.stringify({
-                doList: []
-            }))
+    var _getOffset = function (nYear, nMonth) {
+        var d = new Date();
+
+        d.setFullYear(nYear);
+        d.setMonth(nMonth - 1);
+        d.setDate(1);
+
+        return d.getDay();
+    };
+
+    var _isReapYear = function (nYear) {
+        return (nYear % 4 == 0 && nYear % 100 != 0) || (nYear % 100 == 0 && nYear % 400 == 0);
+    };
+
+    var _getMonthLength = function (nYear, nMonth) {
+        var dateCount;
+
+        switch (nMonth) {
+            case 1:
+            case 3:
+            case 5:
+            case 7:
+            case 8:
+            case 10:
+            case 12:
+                dateCount = 31;
+                break;
+            case 4:
+            case 6:
+            case 9:
+            case 11:
+                dateCount = 30;
+                break;
+            case 2:
+                if (_isReapYear(nYear)) {
+                    dateCount = 29;
+                } else {
+                    dateCount = 28;
+                }
+                break;
+            default:
+                throw new Error("Invalid Month");
         }
-        Calendar.storage = storage;
-    }
+        return dateCount;
+    };
 
-    Calendar.drawCalendar = function (element, data) {
-        var html = "";
+    var _fitDate = function (nYear, nMonth) {
+        var monthData = {}, offset = _getOffset(nYear, nMonth),
+            monthLength = _getMonthLength(nYear, nMonth),
+            row = Math.ceil((offset + monthLength) / 7),
+            endOffset = 1,
+            indexDate = 1,
+            beginOffset = _getMonthLength(nYear, (nMonth == 1) ? 12 : nMonth - 1);
+
+        for (var i = 0; i < row; i++) {
+            monthData[i] = [];
+            for (var j = 0; j < 7; j++) {
+                if (i === 0) {
+                    if (j < offset) {
+                        monthData[i].push({
+                            date: beginOffset - offset + j + 1,
+                            enabled: false
+                        });
+                    } else {
+                        monthData[i].push({
+                            date: indexDate,
+                            enabled: true
+                        });
+                        indexDate++;
+                    }
+                } else if (i === row - 1) {
+                    if (indexDate > monthLength) {
+                        monthData[i].push({
+                            date: endOffset,
+                            enabled: false
+                        });
+                        endOffset++;
+                    } else {
+                        monthData[i].push({
+                            date: indexDate,
+                            enabled: true
+                        });
+                        indexDate++;
+                    }
+                } else {
+                    monthData[i].push({
+                        date: indexDate,
+                        enabled: true
+                    });
+                    indexDate++;
+                }
+            }
+        }
+
+        monthData.row = row;
+
+        return monthData;
+    };
+
+    var _formatWeek = function (week) {
+        var fWeek;
+
+        switch (week) {
+            case 1:
+                fWeek = "Mo";
+                break;
+            case 2:
+                fWeek = "Tu";
+                break;
+            case 3:
+                fWeek = "We";
+                break;
+            case 4:
+                fWeek = "Th";
+                break;
+            case 5:
+                fWeek = "Fr";
+                break;
+            case 6:
+                fWeek = "Sa";
+                break;
+            case 0:
+            case 7:
+                fWeek = "Su";
+                break;
+        }
+        return fWeek;
+    };
+
+    var _getMonthView = function (monthData) {
+        var htmlStr = "";
         
-        element.empty();
-        
-        html += "<div class='calendar'><table class='table table-condensed' style='margin-bottom: 0;'><tbody><tr class='info'>";
+        htmlStr += "<div class='calendar'><table class='table table-condensed' style='margin-bottom: 0;'><tbody><tr class='info'>";
 
         for (var i = 0; i < 7; i++) {
             if (i == 6 || i == 0) {
-                html += "<td style='text-align:center;color: #FF5C00;'>" + formatWeek(i) + "</th>";
+                htmlStr += "<td style='text-align:center;color: #FF5C00;'>" + _formatWeek(i) + "</th>";
             } else {
-                html += "<td style='text-align:center;'>" + formatWeek(i) + "</th>";
+                htmlStr += "<td style='text-align:center;'>" + _formatWeek(i) + "</th>";
             }
         }
-        html += "</tr></tbody></table><table class='table table-bordered table-condensed'><tbody>";
 
-        for (var i = 0, l = data.row; i < l; i++) {
-            html += "<tr>";
-            for (var j = 0, k = data[i].length; j < k; j++) {
-                if (data[i][j].enabled) {
-                    var nowDateStr = Calendar.date.getFullYear() + "-" + (Calendar.date.getMonth() + 1) + "-" + data[i][j].date;
+        htmlStr += "</tr></tbody></table><table class='table table-bordered table-condensed'><tbody>";
+
+        for (var i = 0, l = monthData.row; i < l; i++) {
+            htmlStr += "<tr>";
+            for (var j = 0, k = monthData[i].length; j < k; j++) {
+                if (monthData[i][j].enabled) {
+                    var nowDateStr = _Calendar.date.getFullYear() + "-" + (_Calendar.date.getMonth() + 1) + "-" + monthData[i][j].date;
                     if (hasPlan(nowDateStr)) {
                         if (j == 0 || j == 6) {
-                            html += "<td class='enabled cell plan' style='text-align:center;color: #FF5C00;'>" + data[i][j].date + "</td>";
+                            htmlStr += "<td class='enabled cell plan' style='text-align:center;color: #FF5C00;'>" + monthData[i][j].date + "</td>";
                         } else {
-                            html += "<td class='enabled cell plan' style='text-align:center;'>" + data[i][j].date + "</td>";
+                            htmlStr += "<td class='enabled cell plan' style='text-align:center;'>" + monthData[i][j].date + "</td>";
                         }
                     } else {
                         if (j == 0 || j == 6) {
-                            html += "<td class='enabled cell' style='text-align:center;color: #FF5C00;'>" + data[i][j].date + "</td>";
+                            htmlStr += "<td class='enabled cell' style='text-align:center;color: #FF5C00;'>" + monthData[i][j].date + "</td>";
                         } else {
-                            html += "<td class='enabled cell' style='text-align:center;'>" + data[i][j].date + "</td>";
+                            htmlStr += "<td class='enabled cell' style='text-align:center;'>" + monthData[i][j].date + "</td>";
                         }
                     }
                 } else {
-                    html += "<td class='unabled cell' style='text-align:center;background-color: #F0F0F0;color: #D2D2D2;'>" + data[i][j].date + "</td>";
+                    htmlStr += "<td class='unabled cell' style='text-align:center;background-color: #F0F0F0;color: #D2D2D2;'>" + monthData[i][j].date + "</td>";
                 }
             }
-            html += "</tr>";
+            htmlStr += "</tr>";
         }
         
-        html += "</tbody></table></div>";
+        htmlStr += "</tbody></table></div>";
 
-        element.append(html);
+        return htmlStr;
+    };
+
+    var _drawCalendar = function(sView) {
+
+    };
+
+    return {
+        placeAt: function(sId) {
+            // draw calendar
+            var container = doc.getElementById(sId);
+
+            if(container === null) {
+                throw new Error("Container Not Found");
+            }
+
+            _drawCalendar(container);
+        }
+    };
+};
+
+
+var Calendar = (function ($, window) {
+    var storage = window.localStorage;
+    var _Calendar = {};
+
+    if (storage) {
+        if (!storage.getItem("baku_calendar")) {
+            storage.setItem("baku_calendar", JSON.stringify({
+                doList: []
+            }))
+        }
+        _Calendar.storage = storage;
+    }
+
+    _Calendar.drawCalendar = function (element, data) {
+        var htmlStr = "";
         
-        if(Calendar._callback) {
-            Calendar.bindEvent(Calendar._callback);
+        element.empty();
+        
+        htmlStr += "<div class='calendar'><table class='table table-condensed' style='margin-bottom: 0;'><tbody><tr class='info'>";
+
+        for (var i = 0; i < 7; i++) {
+            if (i == 6 || i == 0) {
+                htmlStr += "<td style='text-align:center;color: #FF5C00;'>" + formatWeek(i) + "</th>";
+            } else {
+                htmlStr += "<td style='text-align:center;'>" + formatWeek(i) + "</th>";
+            }
+        }
+        htmlStr += "</tr></tbody></table><table class='table table-bordered table-condensed'><tbody>";
+
+        for (var i = 0, l = data.row; i < l; i++) {
+            htmlStr += "<tr>";
+            for (var j = 0, k = data[i].length; j < k; j++) {
+                if (data[i][j].enabled) {
+                    var nowDateStr = _Calendar.date.getFullYear() + "-" + (_Calendar.date.getMonth() + 1) + "-" + data[i][j].date;
+                    if (hasPlan(nowDateStr)) {
+                        if (j == 0 || j == 6) {
+                            htmlStr += "<td class='enabled cell plan' style='text-align:center;color: #FF5C00;'>" + data[i][j].date + "</td>";
+                        } else {
+                            htmlStr += "<td class='enabled cell plan' style='text-align:center;'>" + data[i][j].date + "</td>";
+                        }
+                    } else {
+                        if (j == 0 || j == 6) {
+                            htmlStr += "<td class='enabled cell' style='text-align:center;color: #FF5C00;'>" + data[i][j].date + "</td>";
+                        } else {
+                            htmlStr += "<td class='enabled cell' style='text-align:center;'>" + data[i][j].date + "</td>";
+                        }
+                    }
+                } else {
+                    htmlStr += "<td class='unabled cell' style='text-align:center;background-color: #F0F0F0;color: #D2D2D2;'>" + data[i][j].date + "</td>";
+                }
+            }
+            htmlStr += "</tr>";
+        }
+        
+        htmlStr += "</tbody></table></div>";
+
+        element.append(htmlStr);
+        
+        if(_Calendar._callback) {
+            _Calendar.bindEvent(_Calendar._callback);
         }
     };
 
@@ -210,16 +412,16 @@ var Calendar = {};
     };
 
     var hasPlan = function (date) {
-        return Calendar.getPlan(date);
+        return _Calendar.getPlan(date);
     };
 
     var createId = function () {
         return new Date().getTime();
     };
 
-    Calendar.putPlan = function (date, plan) {
+    _Calendar.putPlan = function (date, plan) {
         if (date || plan) {
-            var doList = JSON.parse(storage.getItem("nolan_calendar")).doList,
+            var doList = JSON.parse(storage.getItem("baku_calendar")).doList,
                 hasDate = false;
 
             for (var i = 0, j = doList.length; i < j; i++) {
@@ -246,19 +448,19 @@ var Calendar = {};
                 })
             }
 
-            storage.setItem("nolan_calendar", JSON.stringify({
+            storage.setItem("baku_calendar", JSON.stringify({
                 "doList": doList
             }));
 
-            Calendar.rerender();
+            _Calendar.rerender();
         } else {
             return;
         }
     };
 
-    Calendar.getPlan = function (date) {
+    _Calendar.getPlan = function (date) {
         if (date) {
-            var doList = JSON.parse(storage.getItem("nolan_calendar")).doList;
+            var doList = JSON.parse(storage.getItem("baku_calendar")).doList;
 
             for (var i = 0, j = doList.length; i < j; i++) {
                 if (doList[i].date == date) {
@@ -270,9 +472,9 @@ var Calendar = {};
         }
     };
 
-    Calendar.delPlan = function (date, planId) {
+    _Calendar.delPlan = function (date, planId) {
         if (date || planId) {
-            var doList = JSON.parse(storage.getItem("nolan_calendar")).doList;
+            var doList = JSON.parse(storage.getItem("baku_calendar")).doList;
 
             for (var i = 0, j = doList.length; i < j; i++) {
                 if (doList[i].date == date) {
@@ -290,75 +492,77 @@ var Calendar = {};
                 }
             }
 
-            storage.setItem("nolan_calendar", JSON.stringify({
+            storage.setItem("baku_calendar", JSON.stringify({
                 "doList": doList
             }));
 
-            Calendar.rerender();
+            _Calendar.rerender();
             return true;
         } else {
             return;
         }
     };
 
-    Calendar.drawPreMonth = function (preButton) {
+    _Calendar.drawPreMonth = function (preButton) {
         preButton.on("tap", function () {
-            var t = preMonth(Calendar.date);
-            Calendar.drawCalendar(Calendar.$calendar, fitData(t.getFullYear(), t.getMonth() + 1));
-            if (Calendar._title) {
-                Calendar._title.html(t.getFullYear() + "年" + (t.getMonth() + 1) + "月");
+            var t = preMonth(_Calendar.date);
+            _Calendar.drawCalendar(_Calendar.$calendar, fitData(t.getFullYear(), t.getMonth() + 1));
+            if (_Calendar._title) {
+                _Calendar._title.html(t.getFullYear() + "年" + (t.getMonth() + 1) + "月");
             }
         });
         
         return this;
     };
 
-    Calendar.drawNextMonth = function (nextButton) {
+    _Calendar.drawNextMonth = function (nextButton) {
         nextButton.on("tap", function () {
-            var t = nextMonth(Calendar.date);
-            Calendar.drawCalendar(Calendar.$calendar, fitData(t.getFullYear(), t.getMonth() + 1));
-            if (Calendar._title) {
-                Calendar._title.html(t.getFullYear() + "年" + (t.getMonth() + 1) + "月");
+            var t = nextMonth(_Calendar.date);
+            _Calendar.drawCalendar(_Calendar.$calendar, fitData(t.getFullYear(), t.getMonth() + 1));
+            if (_Calendar._title) {
+                _Calendar._title.html(t.getFullYear() + "年" + (t.getMonth() + 1) + "月");
             }
         });
         
         return this;
     };
 
-    Calendar.init = function (element, title) {
+    _Calendar.init = function (element, title) {
         var data;
 
-        Calendar.date = new Date();
-        Calendar.$calendar = $(element);
-        data = fitData(Calendar.date.getFullYear(), Calendar.date.getMonth() + 1);
+        _Calendar.date = new Date();
+        _Calendar.$calendar = $(element);
+        data = fitData(_Calendar.date.getFullYear(), _Calendar.date.getMonth() + 1);
 
         if (title) {
-            Calendar._title = $(title);
-            $(title).html(Calendar.date.getFullYear() + "年" + (Calendar.date.getMonth() + 1) + "月");
+            _Calendar._title = $(title);
+            $(title).html(_Calendar.date.getFullYear() + "年" + (_Calendar.date.getMonth() + 1) + "月");
         }
         
-        Calendar.drawCalendar(Calendar.$calendar, data);
+        _Calendar.drawCalendar(_Calendar.$calendar, data);
         
         return this;
     };
 
-    Calendar.rerender = function () {
-        var data = fitData(Calendar.date.getFullYear(), Calendar.date.getMonth() + 1);
-        Calendar.drawCalendar(Calendar.$calendar, data);
+    _Calendar.rerender = function () {
+        var data = fitData(_Calendar.date.getFullYear(), _Calendar.date.getMonth() + 1);
+        _Calendar.drawCalendar(_Calendar.$calendar, data);
         
         return this;
     };
     
-    Calendar.bindEvent = function (callback) {
-        Calendar._callback = callback;
+    _Calendar.bindEvent = function (callback) {
+        _Calendar._callback = callback;
         
         $(".enabled").on("tap", function () {
             var date = $(this).html();
             callback(date);
-            Calendar.date.setDate(date);
+            _Calendar.date.setDate(date);
         });
 
         return this;
     };
-    
+
+    return _Calendar;
+
 })($, window);
