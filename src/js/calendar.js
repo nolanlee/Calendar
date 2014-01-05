@@ -65,55 +65,63 @@ function Calendar(oConfig) {
     };
 
     var _getMonthDetails = function (nYear, nMonth) {
-        var monthData = {},
+        var monthData = [],
             offset = _getOffset(nYear, nMonth),
             monthLength = _getMonthLength(nYear, nMonth),
             row = Math.ceil((offset + monthLength) / 7),
             endOffset = 1,
             indexDate = 1,
-            beginOffset = _getMonthLength(nYear, (nMonth === 1) ? 12 : nMonth - 1);
+            beginOffset = _getMonthLength(nYear, (nMonth === 1) ? 12 : nMonth - 1),
+            cellData = null,
+            curYear = currentDate.getFullYear(),
+            curMonth = currentDate.getMonth() + 1,
+            curDate = currentDate.getDate();
 
         for (var i = 0; i < row; i++) {
             monthData[i] = [];
             for (var j = 0; j < 7; j++) {
                 if (i === 0) {
                     if (j < offset) {
-                        monthData[i].push({
+                        cellData = {
                             date: beginOffset - offset + j + 1,
                             enabled: false
-                        });
+                        };
                     } else {
-                        monthData[i].push({
+                        cellData = {
                             date: indexDate,
                             enabled: true
-                        });
+                        };
                         indexDate++;
                     }
                 } else if (i === row - 1) {
                     if (indexDate > monthLength) {
-                        monthData[i].push({
+                        cellData = {
                             date: endOffset,
                             enabled: false
-                        });
+                        };
                         endOffset++;
                     } else {
-                        monthData[i].push({
+                        cellData = {
                             date: indexDate,
                             enabled: true
-                        });
+                        };
                         indexDate++;
                     }
                 } else {
-                    monthData[i].push({
+                    cellData = {
                         date: indexDate,
                         enabled: true
-                    });
+                    };
                     indexDate++;
                 }
+
+                if(nYear === curYear && nMonth === curMonth && cellData.enabled && cellData.date === curDate) {
+                    cellData.isToday = true;
+                }
+
+                monthData[i][j] = cellData;
             }
         }
-
-        monthData.row = row;
 
         return monthData;
     };
@@ -227,7 +235,7 @@ function Calendar(oConfig) {
 
         htmlStr += "</tr></thead><tbody>";
 
-        for (i = 0, l = monthData.row; i < l; i++) {
+        for (i = 0, l = monthData.length; i < l; i++) {
             htmlStr += "<tr>";
             for (j = 0, k = monthData[i].length; j < k; j++) {
                 var cellStrBefore =
@@ -318,9 +326,6 @@ function Calendar(oConfig) {
         });
     };
 
-    /**
-     * draw calendar
-     */
     var _placeAt = function (sId) {
         container = doc.getElementById(sId);
         oConfig = _initConfig(oConfig);

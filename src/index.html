@@ -13,8 +13,17 @@
     </head>
     <body>
         <div id="calendar"></div>
+        <button id="back-today">Back Today</button>
         <script>
-            new Calendar().placeAt("calendar");
+            Calendar({
+                date: new Date("1989-10-17")
+            }).placeAt("calendar");
+
+            document.getElementById("back-today").addEventListener("click", function() {
+                Calendar({
+                    date: new Date()
+                }).placeAt("calendar");
+            });
         </script>
     </body>
 </html>
