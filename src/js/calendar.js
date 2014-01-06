@@ -13,9 +13,9 @@ function Calendar(oConfig) {
     };
 
     var _initConfig = function (oConfig) {
-        return {
-            date: (oConfig && oConfig.date && _typeOf(oConfig.date, "Date")) ? oConfig.date : currentDate
-        };
+        oConfig.date =  (oConfig && oConfig.date && _typeOf(oConfig.date, "Date")) ? oConfig.date : currentDate;
+
+        return oConfig;
     };
 
     var _getOffset = function (nYear, nMonth) {
@@ -126,7 +126,7 @@ function Calendar(oConfig) {
         return monthData;
     };
 
-    var _formatWeek = function (week, isShort) {
+    var _transformWeek = function (week, isShort) {
         var fWeek;
 
         switch (week) {
@@ -161,7 +161,7 @@ function Calendar(oConfig) {
         }
     };
 
-    var _formatMonth = function (month, isShort) {
+    var _transformMonth = function (month, isShort) {
         var fMonth;
 
         switch (month) {
@@ -219,6 +219,28 @@ function Calendar(oConfig) {
             "<span id='cal-next' class='cal-nav-button'" + "style='display:inline-block;width: 12%;'>&gt;</span></div>";
     };
 
+    var _getMonthsView = function() {
+        var htmlStr = "",
+            i = 0,
+            j = 0;
+
+        htmlStr += "<table style='margin-bottom: 0; width: 100%;'>";
+
+        for(i = 0; i < 3; i++) {
+            htmlStr += "<tr>";
+
+            for (j = 0; j < 4; j++) {
+                htmlStr += "<td class='cal-cell' data-month-key='" + (i + 1) * (j + 1) + "' >" + _transformMonth((i + 1) * (j + 1), true) + "</td>";
+            }
+
+            htmlStr += "</tr>";
+        }
+
+         htmlStr += "</table>";
+
+        return htmlStr;
+    };
+
     var _getMonthView = function (monthData) {
         var htmlStr = "",
             i = 0,
@@ -226,11 +248,10 @@ function Calendar(oConfig) {
             k = 0,
             l = 0;
 
-        htmlStr += "<table class='table table-condensed table-bordered' " +
-            "style='margin-bottom: 0; width: 100%;'><thead><tr>";
+        htmlStr += "<table style='margin-bottom: 0; width: 100%;'><thead><tr>";
 
         for (i = 0; i < 7; i++) {
-            htmlStr += "<th class='cal-header'>" + _formatWeek(i, true) + "</th>";
+            htmlStr += "<th class='cal-header'>" + _transformWeek(i, true) + "</th>";
         }
 
         htmlStr += "</tr></thead><tbody>";
@@ -262,14 +283,19 @@ function Calendar(oConfig) {
             htmlStr += "</tr>";
         }
 
-        htmlStr += "</tbody></table></div>";
+        htmlStr += "</tbody></table>";
 
         return htmlStr;
     };
 
     var _drawCalendar = function (oContainer, sView, oDate) {
         var oData = null,
-            htmlStr = null;
+            headerHtmlStr = null,
+            htmlStr = null,
+            previousHandler = null,
+            nextHandler = null,
+            titleHandler = null,
+            cellHandler = null;
 
         switch (sView) {
         case YEAR_SCOPE_VIEW:
@@ -277,19 +303,46 @@ function Calendar(oConfig) {
         case YEARS_VIEW:
             break;
         case MONTHS_VIEW:
+            headerHtmlStr = _getHeaderView(oDate.getFullYear());
+            htmlStr = _getMonthsView();
+            previousHandler = function() {
+                oDate.setFullYear(oDate.getFullYear() - 1);
+                _drawCalendar(container, MONTHS_VIEW, oDate);
+            };
+            nextHandler = function() {
+                oDate.setFullYear(oDate.getFullYear() + 1);
+                _drawCalendar(container, MONTHS_VIEW, oDate);
+            };
+            cellHandler = function() {
+                var month = event.target.dataset.monthKey;
+
+                oDate.setMonth(month - 1);
+                _drawCalendar(container, MONTH_VIEW, oDate);
+            };
             break;
         case MONTH_VIEW:
         default:
             oData = _getMonthDetails(oDate.getFullYear(), oDate.getMonth() + 1);
+            headerHtmlStr = _getHeaderView(_transformMonth(oDate.getMonth() + 1) + ", " + oDate.getFullYear());
             htmlStr = _getMonthView(oData);
+            previousHandler = function () {
+                _drawCalendar(container, MONTH_VIEW, _getPreMonthDate(oDate));
+            };
+            nextHandler = function() {
+                _drawCalendar(container, MONTH_VIEW, _getNextMonthDate(oDate));
+            };
+            titleHandler = function() {
+                _drawCalendar(container, MONTHS_VIEW, oDate);
+            };
             break;
         }
 
         htmlStr =
             "<div class='calendar' style='font-family: Arial, Helvetica, sans-serif; font-size: 16px; padding: 0; text-align:center; min-width: 180px;'>" +
-            _getHeaderView(_formatMonth(oDate.getMonth() + 1) + ", " + oDate.getFullYear()) + htmlStr + "</div>";
+             headerHtmlStr + htmlStr + "</div>";
         oContainer.innerHTML = htmlStr;
-        _afterRender();
+
+        _bindEventHandler(previousHandler, nextHandler, titleHandler, cellHandler);
     };
 
     var _getPreMonthDate = function (oDate) {
@@ -312,18 +365,29 @@ function Calendar(oConfig) {
         return oDate;
     };
 
-    var _afterRender = function () {
+    var _bindEventHandler = function (previousHandler, nextHandler, titleHandler, cellHandler) {
         var previousBtn = doc.getElementById("cal-previous"),
             nextBtn = doc.getElementById("cal-next"),
-            title = doc.getElementById("cal-title");
+            title = doc.getElementById("cal-title"),
+            cells = doc.getElementsByClassName("cal-cell");
 
-        previousBtn.addEventListener("click", function () {
-            _drawCalendar(container, oConfig.viewName, _getPreMonthDate(oConfig.date));
-        });
+        if(previousHandler) {
+            previousBtn.addEventListener("click", previousHandler);
+        }
 
-        nextBtn.addEventListener("click", function () {
-            _drawCalendar(container, oConfig.viewName, _getNextMonthDate(oConfig.date));
-        });
+        if(nextHandler){
+            nextBtn.addEventListener("click", nextHandler);
+        }
+
+        if(titleHandler) {
+            title.addEventListener("click", titleHandler);
+        }
+
+        if(cellHandler) {
+            for (var i = 0, j = cells.length; i < j; i++) {
+                cells[i].addEventListener("click", cellHandler);
+            }
+        }
     };
 
     var _placeAt = function (sId) {

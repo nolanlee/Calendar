@@ -16,11 +16,13 @@
         <button id="back-today">Back Today</button>
         <script>
             Calendar({
-                date: new Date("1989-10-17")
+                date: new Date("1989-10-17"),
+                viewName: "MonthsView"
             }).placeAt("calendar");
 
             document.getElementById("back-today").addEventListener("click", function() {
                 Calendar({
+                    viewName: "MonthView",
                     date: new Date()
                 }).placeAt("calendar");
             });
