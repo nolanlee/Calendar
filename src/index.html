@@ -17,14 +17,11 @@
         <script>
             Calendar({
                 date: new Date("1989-10-17"),
-                viewName: "MonthsView"
+                viewName: "YearsView"
             }).placeAt("calendar");
 
             document.getElementById("back-today").addEventListener("click", function() {
-                Calendar({
-                    viewName: "MonthView",
-                    date: new Date()
-                }).placeAt("calendar");
+                Calendar().placeAt("calendar");
             });
         </script>
     </body>

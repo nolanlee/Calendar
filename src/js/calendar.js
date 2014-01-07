@@ -13,7 +13,10 @@ function Calendar(oConfig) {
     };
 
     var _initConfig = function (oConfig) {
-        oConfig.date =  (oConfig && oConfig.date && _typeOf(oConfig.date, "Date")) ? oConfig.date : currentDate;
+        if(typeof oConfig === "undefined") {
+            oConfig = {};
+        }
+        oConfig.date =  (oConfig && oConfig.date && _typeOf(oConfig.date, "Date")) ? oConfig.date : new Date();
 
         return oConfig;
     };
@@ -201,6 +204,8 @@ function Calendar(oConfig) {
         case 12:
             fMonth = "December";
             break;
+        default:
+            fMonth = "January";
         }
 
         if (isShort) {
@@ -219,7 +224,43 @@ function Calendar(oConfig) {
             "<span id='cal-next' class='cal-nav-button'" + "style='display:inline-block;width: 12%;'>&gt;</span></div>";
     };
 
-    var _getMonthsView = function() {
+    var _getYearsView = function(nYear) {
+        var htmlStr = "",
+            startYear = nYear - (nYear % 10 + 1),
+            i = 0,
+            j = 0;
+
+        htmlStr += "<table style='margin-bottom: 0; width: 100%;'>";
+
+        for(i = 0; i < 3; i++) {
+            htmlStr += "<tr>";
+
+            for (j = 0; j < 4; j++) {
+                var offset = i * 4 + j,
+                    tempYear = startYear + offset;
+
+                if(offset === 0 || offset === 11) {
+                    htmlStr += "<td class='cal-cell cal-disabled-cell' style='color: #D2D2D2;' >" + tempYear + "</td>";
+                } else {
+
+                    if(nYear === tempYear) {
+                        htmlStr += "<td class='cal-cell cal-current-year-cell' style='font-weight: bold;'>" + tempYear + "</td>";
+                    } else {
+                        htmlStr += "<td class='cal-cell' >" + tempYear + "</td>";
+                    }  
+
+                }
+            }
+
+            htmlStr += "</tr>";
+        }
+
+         htmlStr += "</table>";
+
+        return htmlStr;
+    };
+
+    var _getMonthsView = function(nMonth) {
         var htmlStr = "",
             i = 0,
             j = 0;
@@ -230,7 +271,13 @@ function Calendar(oConfig) {
             htmlStr += "<tr>";
 
             for (j = 0; j < 4; j++) {
-                htmlStr += "<td class='cal-cell' data-month-key='" + (i + 1) * (j + 1) + "' >" + _transformMonth((i + 1) * (j + 1), true) + "</td>";
+                var offset = i * 4 + j + 1;
+
+                if(nMonth === offset) {
+                    htmlStr += "<td class='cal-cell cell-current-month-cell' style='font-weight: bold;' data-month-key='" + offset + "' >" + _transformMonth(offset, true) + "</td>";
+                } else {
+                    htmlStr += "<td class='cal-cell' data-month-key='" + offset + "' >" + _transformMonth(offset, true) + "</td>";
+                }
             }
 
             htmlStr += "</tr>";
@@ -301,10 +348,27 @@ function Calendar(oConfig) {
         case YEAR_SCOPE_VIEW:
             break;
         case YEARS_VIEW:
+            var offset = oDate.getFullYear() % 10;
+
+            headerHtmlStr = _getHeaderView((oDate.getFullYear() - offset) + " - " + (oDate.getFullYear() - offset + 9));
+            htmlStr = _getYearsView(oDate.getFullYear());
+            previousHandler = function() {
+                oDate.setFullYear(oDate.getFullYear() - offset - 10);
+                _drawCalendar(container, YEARS_VIEW, oDate);
+            };
+            nextHandler = function() {
+                oDate.setFullYear(oDate.getFullYear() - offset + 10);
+                _drawCalendar(container, YEARS_VIEW, oDate);
+            };
+            cellHandler = function(event) {
+                oDate.setFullYear(event.target.innerHTML);
+                oDate.setMonth(0);
+                _drawCalendar(container, MONTHS_VIEW, oDate);
+            };
             break;
         case MONTHS_VIEW:
             headerHtmlStr = _getHeaderView(oDate.getFullYear());
-            htmlStr = _getMonthsView();
+            htmlStr = _getMonthsView(oDate.getMonth() + 1);
             previousHandler = function() {
                 oDate.setFullYear(oDate.getFullYear() - 1);
                 _drawCalendar(container, MONTHS_VIEW, oDate);
@@ -313,11 +377,14 @@ function Calendar(oConfig) {
                 oDate.setFullYear(oDate.getFullYear() + 1);
                 _drawCalendar(container, MONTHS_VIEW, oDate);
             };
-            cellHandler = function() {
+            cellHandler = function(event) {
                 var month = event.target.dataset.monthKey;
 
                 oDate.setMonth(month - 1);
                 _drawCalendar(container, MONTH_VIEW, oDate);
+            };
+            titleHandler = function() {
+                _drawCalendar(container, YEARS_VIEW, oDate);
             };
             break;
         case MONTH_VIEW:
@@ -339,10 +406,10 @@ function Calendar(oConfig) {
 
         htmlStr =
             "<div class='calendar' style='font-family: Arial, Helvetica, sans-serif; font-size: 16px; padding: 0; text-align:center; min-width: 180px;'>" +
-             headerHtmlStr + htmlStr + "</div>";
-        oContainer.innerHTML = htmlStr;
+            headerHtmlStr + "<div id='cal-view'>" + htmlStr + "</div></div>";
 
-        _bindEventHandler(previousHandler, nextHandler, titleHandler, cellHandler);
+         oContainer.innerHTML = htmlStr;
+        _bindEventHandler(previousHandler, nextHandler, titleHandler, cellHandler);      
     };
 
     var _getPreMonthDate = function (oDate) {
@@ -388,6 +455,54 @@ function Calendar(oConfig) {
                 cells[i].addEventListener("click", cellHandler);
             }
         }
+    };
+
+    var _fadeIn = function(element, callback, speed) {
+        var opacity = 0,
+            inteval = null,
+            flag = true;
+            __in = function() {
+                if(opacity >= 1) {
+                    element.style.opacity = 1;
+                    callback.call();
+                    clearInterval(inteval);
+                } else {
+                    element.style.opacity = opacity;
+                    if(flag) {
+                        element.style.display = "block";
+                        flag = false;
+                    }       
+                    opacity += 1 / 30;
+                }
+            };
+
+        if(!speed || typeof speed !== "number") {
+            speed = 5;
+        }
+        inteval = setInterval(__in, speed);
+    };
+
+    var _fadeOut = function(element, callback, speed) {
+        var opacity = 1,
+            inteval = null,
+            flag = true;
+            __out = function() {
+                if(opacity <= 0) {
+                    element.style.opacity = 0;
+                    element.style.display = "none";
+                    callback.call();
+                    clearInterval(inteval);    
+                } else {
+                    opacity -= 1 / 30;
+                    element.style.opacity = opacity; 
+                }
+            };
+            
+        if(!speed || typeof speed !== "number") {
+            speed = 5;
+        }
+
+        inteval = setInterval(__out, speed);
     };
 
     var _placeAt = function (sId) {
